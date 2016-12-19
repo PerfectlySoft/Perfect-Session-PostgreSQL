@@ -38,7 +38,7 @@ public struct PostgresSessions {
 		var s = session
 		s.touch()
 		// perform UPDATE
-		let stmt = "UPDATE \(PostgresSessionConnector.table) SET userid = $1, updated = $1, idle = $3, data = $4 WHERE token = $5"
+		let stmt = "UPDATE \(PostgresSessionConnector.table) SET userid = $1, updated = $2, idle = $3, data = $4 WHERE token = $5"
 		exec(stmt, params: [
 			session.userid,
 			session.updated,
@@ -115,8 +115,7 @@ public struct PostgresSessions {
 	func exec(_ statement: String, params: [Any]) {
 		let server = connect()
 		let _ = server.exec(statement: statement, params: params)
-//		let errorMsg = server.errorMessage().trimmingCharacters(in: .whitespacesAndNewlines)
-//		print(errorMsg)
+//		print(server.errorMessage())
 		server.close()
 	}
 

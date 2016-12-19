@@ -22,7 +22,9 @@ public struct SessionPostgresDriver {
 }
 public class SessionPostgresFilter {
 	var driver = PostgresSessions()
-	public init() {}
+	public init() {
+		driver.setup()
+	}
 }
 
 extension SessionPostgresFilter: HTTPRequestFilter {
