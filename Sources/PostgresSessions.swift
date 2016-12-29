@@ -9,6 +9,7 @@
 import TurnstileCrypto
 import PostgreSQL
 import PerfectSession
+import PerfectHTTP
 
 public struct PostgresSessionConnector {
 
@@ -48,20 +49,24 @@ public struct PostgresSessions {
 			])
 	}
 
-	public func start() -> PerfectSession {
+	public func start(_ request: HTTPRequest) -> PerfectSession {
 		let rand = URandom()
 		var session = PerfectSession()
 		session.token = rand.secureToken
+		session.ipaddress = request.remoteAddress.host
+		session.useragent = request.header(.userAgent) ?? "unknown"
 
 		// perform INSERT
-		let stmt = "INSERT INTO \(PostgresSessionConnector.table) (token,userid,created, updated, idle, data) VALUES($1,$2,$3,$4,$5,$6)"
+		let stmt = "INSERT INTO \(PostgresSessionConnector.table) (token,userid,created, updated, idle, data, ipaddress, useragent) VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
 		exec(stmt, params: [
 			session.token,
 			session.userid,
 			session.created,
 			session.updated,
 			session.idle,
-			session.tojson()
+			session.tojson(),
+			session.ipaddress,
+			session.useragent
 			])
 		return session
 	}
@@ -75,9 +80,7 @@ public struct PostgresSessions {
 	public func resume(token: String) -> PerfectSession {
 		var session = PerfectSession()
 		let server = connect()
-		let result = server.exec(statement: "SELECT token,userid,created, updated, idle, data FROM \(PostgresSessionConnector.table) WHERE token = $1", params: [token])
-//		let errorMsg = server.errorMessage().trimmingCharacters(in: .whitespacesAndNewlines)
-//		print(errorMsg)
+		let result = server.exec(statement: "SELECT token,userid,created, updated, idle, data, ipaddress, useragent FROM \(PostgresSessionConnector.table) WHERE token = $1", params: [token])
 
 		let num = result.numTuples()
 		for x in 0..<num {
@@ -89,6 +92,8 @@ public struct PostgresSessions {
 			if let str = result.getFieldString(tupleIndex: x, fieldIndex: 5) {
 				session.fromjson(str)
 			}
+			session.ipaddress = result.getFieldString(tupleIndex: x, fieldIndex: 6) ?? ""
+			session.useragent = result.getFieldString(tupleIndex: x, fieldIndex: 7) ?? ""
 		}
 		result.clear()
 
@@ -108,14 +113,13 @@ public struct PostgresSessions {
 	}
 
 	func setup(){
-		let stmt = "CREATE TABLE \"\(PostgresSessionConnector.table)\" (\"token\" varchar NOT NULL, \"userid\" varchar, \"created\" int4 NOT NULL DEFAULT 0, \"updated\" int4 NOT NULL DEFAULT 0, \"idle\" int4 NOT NULL DEFAULT 0, \"data\" text, PRIMARY KEY (\"token\") NOT DEFERRABLE INITIALLY IMMEDIATE ) WITH (OIDS=FALSE);"
+		let stmt = "CREATE TABLE \"\(PostgresSessionConnector.table)\" (\"token\" varchar NOT NULL, \"userid\" varchar, \"created\" int4 NOT NULL DEFAULT 0, \"updated\" int4 NOT NULL DEFAULT 0, \"idle\" int4 NOT NULL DEFAULT 0, \"data\" text, \"ipaddress\" varchar, \"useragent\" text, PRIMARY KEY (\"token\") NOT DEFERRABLE INITIALLY IMMEDIATE ) WITH (OIDS=FALSE);"
 		exec(stmt, params: [])
 	}
 
 	func exec(_ statement: String, params: [Any]) {
 		let server = connect()
 		let _ = server.exec(statement: statement, params: params)
-//		print(server.errorMessage())
 		server.close()
 	}
 
