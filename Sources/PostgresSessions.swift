@@ -55,6 +55,8 @@ public struct PostgresSessions {
 		session.token = rand.secureToken
 		session.ipaddress = request.remoteAddress.host
 		session.useragent = request.header(.userAgent) ?? "unknown"
+		session._state = "new"
+		session.setCSRF()
 
 		// perform INSERT
 		let stmt = "INSERT INTO \(PostgresSessionConnector.table) (token,userid,created, updated, idle, data, ipaddress, useragent) VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
@@ -98,6 +100,7 @@ public struct PostgresSessions {
 		result.clear()
 
 		server.close()
+		session._state = "resume"
 		return session
 	}
 
