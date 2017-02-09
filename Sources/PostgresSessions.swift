@@ -32,7 +32,9 @@ public struct PostgresSessionConnector {
 public struct PostgresSessions {
 
 	/// Initializes the Session Manager. No config needed!
-	public init() {}
+	public init() {
+		setup()
+	}
 
 
 	public func save(session: PerfectSession) {
@@ -151,7 +153,7 @@ public struct PostgresSessions {
 		}
 		return false
 	}
-
+	
 }
 
 

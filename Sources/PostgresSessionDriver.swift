@@ -68,21 +68,27 @@ extension SessionPostgresFilter: HTTPRequestFilter {
 				}
 			}
 		}
-		
+
 		CORSheaders.make(request, response)
 		callback(HTTPRequestFilterResult.continue(request, response))
 	}
+
+	/// Wrapper enabling PerfectHTTP 2.1 filter support
+	public static func filterAPIRequest(data: [String:Any]) throws -> HTTPRequestFilter {
+		return SessionPostgresFilter()
+	}
+
 }
 
 extension SessionPostgresFilter: HTTPResponseFilter {
 
 	/// Called once before headers are sent to the client.
 	public func filterHeaders(response: HTTPResponse, callback: (HTTPResponseFilterResult) -> ()) {
-		
+
 		guard let session = response.request.session else {
 			return callback(.continue)
 		}
-		
+
 		driver.save(session: session)
 		let sessionID = session.token
 
@@ -113,6 +119,12 @@ extension SessionPostgresFilter: HTTPResponseFilter {
 
 		callback(.continue)
 	}
+
+	/// Wrapper enabling PerfectHTTP 2.1 filter support
+	public static func filterAPIResponse(data: [String:Any]) throws -> HTTPResponseFilter {
+		return SessionPostgresFilter()
+	}
+
 
 	/// Called zero or more times for each bit of body data which is sent to the client.
 	public func filterBody(response: HTTPResponse, callback: (HTTPResponseFilterResult) -> ()) {
