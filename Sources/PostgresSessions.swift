@@ -78,7 +78,9 @@ public struct PostgresSessions {
 	/// Deletes the session for a session identifier.
 	public func destroy(_ request: HTTPRequest, _ response: HTTPResponse) {
 		let stmt = "DELETE FROM \(PostgresSessionConnector.table) WHERE token = $1"
-		exec(stmt, params: [(request.session?.token)!])
+		if let t = request.session?.token {
+			exec(stmt, params: [t])
+		}
 
 		// Reset cookie to make absolutely sure it does not get recreated in some circumstances.
 		var domain = ""
