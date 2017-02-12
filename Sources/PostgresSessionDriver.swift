@@ -31,45 +31,44 @@ public class SessionPostgresFilter {
 extension SessionPostgresFilter: HTTPRequestFilter {
 
 	public func filter(request: HTTPRequest, response: HTTPResponse, callback: (HTTPRequestFilterResult) -> ()) {
-
-		var createSession = true
-		if let token = request.getCookie(name: SessionConfig.name) {
-			var session = driver.resume(token: token)
-			if session.isValid(request) {
-				session._state = "resume"
-				request.session = session
-				createSession = false
-			} else {
-				driver.destroy(request, response)
-			}
-		}
-		if createSession {
-			//start new session
-			request.session = driver.start(request)
-
-
-		}
-
-		// Now process CSRF
-		if request.session?._state != "new" || request.method == .post {
-			//print("Check CSRF Request: \(CSRFFilter.filter(request))")
-			if !CSRFFilter.filter(request) {
-
-				switch SessionConfig.CSRF.failAction {
-				case .fail:
-					response.status = .notAcceptable
-					callback(.halt(request, response))
-					return
-				case .log:
-					LogFile.info("CSRF FAIL")
-
-				default:
-					print("CSRF FAIL (console notification only)")
+		if request.path != SessionConfig.healthCheckRoute {
+			var createSession = true
+			if let token = request.getCookie(name: SessionConfig.name) {
+				var session = driver.resume(token: token)
+				if session.isValid(request) {
+					session._state = "resume"
+					request.session = session
+					createSession = false
+				} else {
+					driver.destroy(request, response)
 				}
 			}
-		}
+			if createSession {
+				//start new session
+				request.session = driver.start(request)
+			}
 
-		CORSheaders.make(request, response)
+			// Now process CSRF
+			if request.session?._state != "new" || request.method == .post {
+				//print("Check CSRF Request: \(CSRFFilter.filter(request))")
+				if !CSRFFilter.filter(request) {
+
+					switch SessionConfig.CSRF.failAction {
+					case .fail:
+						response.status = .notAcceptable
+						callback(.halt(request, response))
+						return
+					case .log:
+						LogFile.info("CSRF FAIL")
+
+					default:
+						print("CSRF FAIL (console notification only)")
+					}
+				}
+			}
+
+			CORSheaders.make(request, response)
+		}
 		callback(HTTPRequestFilterResult.continue(request, response))
 	}
 
