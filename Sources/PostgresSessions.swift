@@ -44,11 +44,11 @@ public struct PostgresSessions {
 		// perform UPDATE
 		let stmt = "UPDATE \(PostgresSessionConnector.table) SET userid = $1, updated = $2, idle = $3, data = $4 WHERE token = $5"
 		exec(stmt, params: [
-			session.userid,
-			session.updated,
-			session.idle,
-			session.tojson(),
-			session.token
+			s.userid,
+			s.updated,
+			s.idle,
+			s.tojson(),
+			s.token
 			])
 	}
 
@@ -56,6 +56,7 @@ public struct PostgresSessions {
 		let rand = URandom()
 		var session = PerfectSession()
 		session.token = rand.secureToken
+		session.idle = SessionConfig.idle
 		session.ipaddress = request.remoteAddress.host
 		session.useragent = request.header(.userAgent) ?? "unknown"
 		session._state = "new"
