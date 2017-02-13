@@ -33,8 +33,23 @@ extension SessionPostgresFilter: HTTPRequestFilter {
 	public func filter(request: HTTPRequest, response: HTTPResponse, callback: (HTTPRequestFilterResult) -> ()) {
 		if request.path != SessionConfig.healthCheckRoute {
 			var createSession = true
+			var session = PerfectSession()
+
 			if let token = request.getCookie(name: SessionConfig.name) {
-				var session = driver.resume(token: token)
+				// From Cookie
+				session = driver.resume(token: token)
+			} else if let bearer = request.header(.authorization), !bearer.isEmpty {
+				// From Bearer Token
+				let b = bearer.chompLeft("Bearer ")
+				session = driver.resume(token: b)
+
+			} else if let s = request.param(name: "session"), !s.isEmpty {
+				// From Session Link
+				session = driver.resume(token: s)
+			}
+
+			if !session.token.isEmpty {
+				//				var session = driver.resume(token: token)
 				if session.isValid(request) {
 					session._state = "resume"
 					request.session = session
