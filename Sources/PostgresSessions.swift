@@ -10,6 +10,7 @@ import TurnstileCrypto
 import PostgreSQL
 import PerfectSession
 import PerfectHTTP
+import Foundation
 
 public struct PostgresSessionConnector {
 
@@ -39,7 +40,7 @@ public struct PostgresSessions {
 
 	public func save(session: PerfectSession) {
 		var s = session
-		s.touch()
+		s.updated = Int(Date().timeIntervalSince1970)
 		// perform UPDATE
 		let stmt = "UPDATE \(PostgresSessionConnector.table) SET userid = $1, updated = $2, idle = $3, data = $4 WHERE token = $5"
 		exec(stmt, params: [
