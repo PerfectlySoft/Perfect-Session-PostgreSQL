@@ -22,7 +22,7 @@ import PerfectSession
 
 extension HTTPResponse {
 	/// Provides a convenience method for redirects
-	public func redirect(path: String, session: PerfectSession = PerfectSession()) {
+	public func sessionRedirect(path: String, session: PerfectSession = PerfectSession()) {
 
 		if !session.token.isEmpty  {
 			let driver = PostgresSessions()
