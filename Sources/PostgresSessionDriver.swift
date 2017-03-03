@@ -113,24 +113,31 @@ extension SessionPostgresFilter: HTTPResponseFilter {
 		}
 
 		if !sessionID.isEmpty {
-			response.addCookie(HTTPCookie(
-				name: SessionConfig.name,
-				value: "\(sessionID)",
-				domain: domain,
-				expires: .relativeSeconds(SessionConfig.idle),
-				path: SessionConfig.cookiePath,
-				secure: SessionConfig.cookieSecure,
-				httpOnly: SessionConfig.cookieHTTPOnly,
-				sameSite: SessionConfig.cookieSameSite
+			if response.header(.contentType) == "application/json" {
+				response.addHeader(.custom(name: "Authorization"), value: sessionID)
+				if let t = session.data["csrf"] {
+					response.addHeader(.custom(name: "CSRF-TOKEN"), value: t as! String)
+				}
+			} else {
+
+				response.addCookie(HTTPCookie(
+					name: SessionConfig.name,
+					value: "\(sessionID)",
+					domain: domain,
+					expires: .relativeSeconds(SessionConfig.idle),
+					path: SessionConfig.cookiePath,
+					secure: SessionConfig.cookieSecure,
+					httpOnly: SessionConfig.cookieHTTPOnly,
+					sameSite: SessionConfig.cookieSameSite
+					)
 				)
-			)
-			// CSRF Set Cookie
-			if SessionConfig.CSRF.checkState {
-				//print("in SessionConfig.CSRFCheckState")
-				CSRFFilter.setCookie(response)
+				// CSRF Set Cookie
+				if SessionConfig.CSRF.checkState {
+					//print("in SessionConfig.CSRFCheckState")
+					CSRFFilter.setCookie(response)
+				}
 			}
 		}
-
 		callback(.continue)
 	}
 
