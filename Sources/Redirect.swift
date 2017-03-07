@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Redirect.swift
 //  PerfectSessionPostgreSQL
 //
 //  Created by Jonathan Guthrie on 2017-02-13.
