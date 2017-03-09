@@ -6,7 +6,6 @@
 //
 //
 
-import TurnstileCrypto
 import PostgreSQL
 import PerfectSession
 import PerfectHTTP
@@ -53,9 +52,8 @@ public struct PostgresSessions {
 	}
 
 	public func start(_ request: HTTPRequest) -> PerfectSession {
-		let rand = URandom()
 		var session = PerfectSession()
-		session.token = rand.secureToken
+		session.token = UUID().uuidString
 		session.idle = SessionConfig.idle
 		session.ipaddress = request.remoteAddress.host
 		session.useragent = request.header(.userAgent) ?? "unknown"
