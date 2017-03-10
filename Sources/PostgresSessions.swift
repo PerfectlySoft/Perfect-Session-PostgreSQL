@@ -36,6 +36,10 @@ public struct PostgresSessions {
 		setup()
 	}
 
+	public func clean() {
+		let stmt = "DELETE FROM \(PostgresSessionConnector.table) WHERE updated + idle < $1"
+		exec(stmt, params: [Int(Date().timeIntervalSince1970)])
+	}
 
 	public func save(session: PerfectSession) {
 		var s = session
