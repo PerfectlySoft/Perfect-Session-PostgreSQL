@@ -52,6 +52,8 @@ extension SessionPostgresFilter: HTTPRequestFilter {
 				let b = bearer.chompLeft("Bearer ")
 				session = driver.resume(token: b)
 
+				// For OAuth2 Filters, add alternative load here.
+
 			} else if let s = request.param(name: "session"), !s.isEmpty {
 				// From Session Link
 				session = driver.resume(token: s)
@@ -67,31 +69,33 @@ extension SessionPostgresFilter: HTTPRequestFilter {
 					driver.destroy(request, response)
 				}
 			}
-			if createSession {
+			if createSession, !session._isOAuth2 {
 				//start new session
 				request.session = driver.start(request)
 			}
 
-			// Now process CSRF
-			if request.session?._state != "new" || request.method == .post {
-				//print("Check CSRF Request: \(CSRFFilter.filter(request))")
-				if !CSRFFilter.filter(request) {
+			if !session._isOAuth2 {
+				// Now process CSRF
+				if request.session?._state != "new" || request.method == .post {
+					//print("Check CSRF Request: \(CSRFFilter.filter(request))")
+					if !CSRFFilter.filter(request) {
 
-					switch SessionConfig.CSRF.failAction {
-					case .fail:
-						response.status = .notAcceptable
-						callback(.halt(request, response))
-						return
-					case .log:
-						LogFile.info("CSRF FAIL")
+						switch SessionConfig.CSRF.failAction {
+						case .fail:
+							response.status = .notAcceptable
+							callback(.halt(request, response))
+							return
+						case .log:
+							LogFile.info("CSRF FAIL")
 
-					default:
-						print("CSRF FAIL (console notification only)")
+						default:
+							print("CSRF FAIL (console notification only)")
+						}
 					}
 				}
-			}
 
-			CORSheaders.make(request, response)
+				CORSheaders.make(request, response)
+			}
 		}
 		callback(HTTPRequestFilterResult.continue(request, response))
 	}
@@ -112,38 +116,42 @@ extension SessionPostgresFilter: HTTPResponseFilter {
 			return callback(.continue)
 		}
 
-		driver.save(session: session)
-		let sessionID = session.token
+		// Zero point in saving an OAuth2 Session because it's not part of the normal session structure!
+		if !session._isOAuth2 {
 
-		// 0.0.6 updates
-		var domain = ""
-		if !SessionConfig.cookieDomain.isEmpty {
-			domain = SessionConfig.cookieDomain
-		}
+			driver.save(session: session)
+			let sessionID = session.token
 
-		if !sessionID.isEmpty {
-			if response.header(.contentType) == "application/json" {
-				response.addHeader(.custom(name: "Authorization"), value: sessionID)
-				if let t = session.data["csrf"] {
-					response.addHeader(.custom(name: "CSRF-TOKEN"), value: t as! String)
-				}
-			} else {
+			// 0.0.6 updates
+			var domain = ""
+			if !SessionConfig.cookieDomain.isEmpty {
+				domain = SessionConfig.cookieDomain
+			}
 
-				response.addCookie(HTTPCookie(
-					name: SessionConfig.name,
-					value: "\(sessionID)",
-					domain: domain,
-					expires: .relativeSeconds(SessionConfig.idle),
-					path: SessionConfig.cookiePath,
-					secure: SessionConfig.cookieSecure,
-					httpOnly: SessionConfig.cookieHTTPOnly,
-					sameSite: SessionConfig.cookieSameSite
+			if !sessionID.isEmpty {
+				if response.header(.contentType) == "application/json" {
+					response.addHeader(.custom(name: "Authorization"), value: sessionID)
+					if let t = session.data["csrf"] {
+						response.addHeader(.custom(name: "CSRF-TOKEN"), value: t as! String)
+					}
+				} else {
+
+					response.addCookie(HTTPCookie(
+						name: SessionConfig.name,
+						value: "\(sessionID)",
+						domain: domain,
+						expires: .relativeSeconds(SessionConfig.idle),
+						path: SessionConfig.cookiePath,
+						secure: SessionConfig.cookieSecure,
+						httpOnly: SessionConfig.cookieHTTPOnly,
+						sameSite: SessionConfig.cookieSameSite
+						)
 					)
-				)
-				// CSRF Set Cookie
-				if SessionConfig.CSRF.checkState {
-					//print("in SessionConfig.CSRFCheckState")
-					CSRFFilter.setCookie(response)
+					// CSRF Set Cookie
+					if SessionConfig.CSRF.checkState {
+						//print("in SessionConfig.CSRFCheckState")
+						CSRFFilter.setCookie(response)
+					}
 				}
 			}
 		}
@@ -161,3 +169,4 @@ extension SessionPostgresFilter: HTTPResponseFilter {
 		callback(.continue)
 	}
 }
+

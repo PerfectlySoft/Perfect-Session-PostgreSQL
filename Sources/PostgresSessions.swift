@@ -159,8 +159,5 @@ public struct PostgresSessions {
 		}
 		return false
 	}
-	
+
 }
-
-
-
