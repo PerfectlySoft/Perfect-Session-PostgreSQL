@@ -6,7 +6,7 @@
 //
 //
 
-import PostgreSQL
+import PerfectPostgreSQL
 import PerfectSession
 import PerfectHTTP
 import Foundation
