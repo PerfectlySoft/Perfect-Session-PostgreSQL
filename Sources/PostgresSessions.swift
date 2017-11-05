@@ -59,7 +59,17 @@ public struct PostgresSessions {
 		var session = PerfectSession()
 		session.token = UUID().uuidString
 		session.idle = SessionConfig.idle
-		session.ipaddress = request.remoteAddress.host
+		
+		// adding for x-forwarded-for support:
+		let ff = request.header(.xForwardedFor) ?? ""
+		if ff.isEmpty {
+			// session setting normally (not load balanced)
+			session.ipaddress = request.remoteAddress.host
+		} else {
+			// Session is coming through a load balancer or proxy
+			session.ipaddress = ff
+		}
+
 		session.useragent = request.header(.userAgent) ?? "unknown"
 		session._state = "new"
 		session.setCSRF()
