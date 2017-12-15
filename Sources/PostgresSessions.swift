@@ -23,7 +23,7 @@ public struct PostgresSessionConnector {
 	private init(){}
 
 	public static func connectionString() -> String {
-		return "postgresql://\(PostgresSessionConnector.username):\(PostgresSessionConnector.password)@\(PostgresSessionConnector.host):\(PostgresSessionConnector.port)/\(PostgresSessionConnector.database)"
+		return "postgresql://\(PostgresSessionConnector.username.stringByEncodingURL):\(PostgresSessionConnector.password.stringByEncodingURL)@\(PostgresSessionConnector.host.stringByEncodingURL):\(PostgresSessionConnector.port)/\(PostgresSessionConnector.database.stringByEncodingURL)"
 	}
 
 }
