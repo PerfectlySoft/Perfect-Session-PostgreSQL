@@ -9,25 +9,25 @@
 import PerfectHTTP
 import PerfectSession
 import PerfectLogger
-import PerfectRepeater
+import Dispatch
+import PerfectLib
+import Foundation
 
 public struct SessionPostgresDriver {
 	public var requestFilter: (HTTPRequestFilter, HTTPFilterPriority)
 	public var responseFilter: (HTTPResponseFilter, HTTPFilterPriority)
-
+	let queue:DispatchQueue
 
 	public init() {
 		let filter = SessionPostgresFilter()
 		requestFilter = (filter, HTTPFilterPriority.high)
 		responseFilter = (filter, HTTPFilterPriority.high)
 
-		let cleaner = {
-			() -> Bool in
+		queue = DispatchQueue(label: UUID().string)
+		queue.asyncAfter(deadline: (.now() + Double(SessionConfig.purgeInterval))) {
 			let s = PostgresSessions()
 			s.clean()
-			return true
 		}
-		Repeater.exec(timer: Double(SessionConfig.purgeInterval), callback: cleaner)
 	}
 }
 public class SessionPostgresFilter {
@@ -47,10 +47,10 @@ extension SessionPostgresFilter: HTTPRequestFilter {
 			if let token = request.getCookie(name: SessionConfig.name) {
 				// From Cookie
 				session = driver.resume(token: token)
-			} else if let bearer = request.header(.authorization), !bearer.isEmpty {
+			} else if var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") {
 				// From Bearer Token
-				let b = bearer.chompLeft("Bearer ")
-				session = driver.resume(token: b)
+				bearer.removeFirst("Bearer ".count)
+				session = driver.resume(token: bearer)
 
 				// For OAuth2 Filters, add alternative load here.
 
