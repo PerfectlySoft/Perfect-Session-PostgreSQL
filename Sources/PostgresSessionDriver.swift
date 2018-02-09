@@ -47,7 +47,7 @@ extension SessionPostgresFilter: HTTPRequestFilter {
 			if let token = request.getCookie(name: SessionConfig.name) {
 				// From Cookie
 				session = driver.resume(token: token)
-			} else if  if var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") {
+			} else if var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") {
 				// From Bearer Token
 				bearer.removeFirst("Bearer ".count)
 				session = driver.resume(token: bearer)
