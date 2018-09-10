@@ -6,6 +6,7 @@
 //
 //
 
+import PerfectLib
 import PerfectPostgreSQL
 import PerfectSession
 import PerfectHTTP
@@ -59,7 +60,7 @@ public struct PostgresSessions {
 		var session = PerfectSession()
 		session.token = UUID().uuidString
 		session.idle = SessionConfig.idle
-		
+
 		// adding for x-forwarded-for support:
 		let ff = request.header(.xForwardedFor) ?? ""
 		if ff.isEmpty {
@@ -146,7 +147,10 @@ public struct PostgresSessions {
 		let server = PGConnection()
 		let status = server.connectdb(PostgresSessionConnector.connectionString())
 		if status != .ok {
-			print("\(status)")
+			Log.error(message:
+				"Unable to connect to the session database. " +
+				"connectionString: \(PostgresSessionConnector.connectionString()), " +
+				"status: \(status)")
 		}
 		return server
 	}
