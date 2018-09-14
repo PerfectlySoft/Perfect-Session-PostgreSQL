@@ -37,7 +37,7 @@ public struct PostgresSessions {
 	}
 
 	public func clean() {
-		let stmt = "DELETE FROM \(PostgresSessionConnector.table) WHERE updated + idle < $1"
+		let stmt = "DELETE FROM \"\(PostgresSessionConnector.table)\" WHERE updated + idle < $1"
 		exec(stmt, params: [Int(Date().timeIntervalSince1970)])
 	}
 
@@ -45,7 +45,7 @@ public struct PostgresSessions {
 		var s = session
 		s.updated = Int(Date().timeIntervalSince1970)
 		// perform UPDATE
-		let stmt = "UPDATE \(PostgresSessionConnector.table) SET userid = $1, updated = $2, idle = $3, data = $4 WHERE token = $5"
+		let stmt = "UPDATE \"\(PostgresSessionConnector.table)\" SET userid = $1, updated = $2, idle = $3, data = $4 WHERE token = $5"
 		exec(stmt, params: [
 			s.userid,
 			s.updated,
@@ -75,7 +75,7 @@ public struct PostgresSessions {
 		session.setCSRF()
 
 		// perform INSERT
-		let stmt = "INSERT INTO \(PostgresSessionConnector.table) (token,userid,created, updated, idle, data, ipaddress, useragent) VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
+		let stmt = "INSERT INTO \"\(PostgresSessionConnector.table)\" (token,userid,created, updated, idle, data, ipaddress, useragent) VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
 		exec(stmt, params: [
 			session.token,
 			session.userid,
@@ -91,7 +91,7 @@ public struct PostgresSessions {
 
 	/// Deletes the session for a session identifier.
 	public func destroy(_ request: HTTPRequest, _ response: HTTPResponse) {
-		let stmt = "DELETE FROM \(PostgresSessionConnector.table) WHERE token = $1"
+		let stmt = "DELETE FROM \"\(PostgresSessionConnector.table)\" WHERE token = $1"
 		if let t = request.session?.token {
 			exec(stmt, params: [t])
 		}
@@ -118,7 +118,7 @@ public struct PostgresSessions {
 	public func resume(token: String) -> PerfectSession {
 		var session = PerfectSession()
 		let server = connect()
-		let result = server.exec(statement: "SELECT token,userid,created, updated, idle, data, ipaddress, useragent FROM \(PostgresSessionConnector.table) WHERE token = $1", params: [token])
+		let result = server.exec(statement: "SELECT token,userid,created, updated, idle, data, ipaddress, useragent FROM \"\(PostgresSessionConnector.table)\" WHERE token = $1", params: [token])
 
 		let num = result.numTuples()
 		for x in 0..<num {
