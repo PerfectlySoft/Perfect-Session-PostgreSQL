@@ -95,6 +95,9 @@ extension SessionPostgresFilter: HTTPRequestFilter {
 				}
 
 				CORSheaders.make(request, response)
+				if request.method == .options {
+					callback(HTTPRequestFilterResult.halt(request, response))
+				}
 			}
 		}
 		callback(HTTPRequestFilterResult.continue(request, response))
